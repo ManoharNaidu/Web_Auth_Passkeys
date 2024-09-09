@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile Page</title>
+  </head>
+  <body>
+    Welcome to your profile page!
+    <button id="register-passkey-btn">Register Passkey</button>
+  </body>
+
+  <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+
+  <script>
+    const registerPasskeyBtn = document.getElementById("register-passkey-btn");
+
+    registerPasskeyBtn.addEventListener("click", async (e) => {
+      const url = new URL(window.location);
+      const userId = url.searchParams.get("userId");
+
+      const response = await fetch("/register-passkey", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      const challangeResult = await response.json();
+
+      const { options } = challangeResult; // Server side challenge
+
+      const authResult = await SimpleWebAuthnBrowser.startRegistration(options);
+      console.log(authResult);
+
+      const verificationResponse = await fetch("/verify-passkey", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, cred: authResult }),
+      });
+
+      const verificationResult = await verificationResponse.json();
+      if (verificationResult.success) {
+        console.log("Passkey registration successful!");
+      } else {
+        alert("Passkey registration failed!");
+      }
+    });
+  </script>
+</html>
